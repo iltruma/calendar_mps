@@ -17,32 +17,32 @@ const DEFAULT_BUDGETS = {
     FS: { total: 4,  unit: "giorni" },
 };
 
-// Festivita nazionali fisse (mese 0-indexed, giorno)
+// Festivita nazionali fisse (mese 1-indexed for dayjs)
 function getHolidays(year) {
     const fixed = [
-        [0, 1],   // Capodanno
-        [0, 6],   // Epifania
-        [3, 25],  // Liberazione
-        [4, 1],   // Festa dei Lavoratori
-        [5, 2],   // Festa della Repubblica
-        [7, 15],  // Ferragosto
-        [10, 1],  // Tutti i Santi
-        [11, 8],  // Immacolata
-        [11, 25], // Natale
-        [11, 26], // Santo Stefano
-        [11, 31], // San Silvestro (banche chiuse)
+        [1, 1],   // Capodanno
+        [1, 6],   // Epifania
+        [4, 25],  // Liberazione
+        [5, 1],   // Festa dei Lavoratori
+        [6, 2],   // Festa della Repubblica
+        [8, 15],  // Ferragosto
+        [11, 1],  // Tutti i Santi
+        [12, 8],  // Immacolata
+        [12, 25], // Natale
+        [12, 26], // Santo Stefano
+        [12, 31], // San Silvestro (banche chiuse)
     ];
 
     const easter = computeEaster(year);
-    const easterMon = new Date(easter);
-    easterMon.setDate(easterMon.getDate() + 1);
+    const easterDay = dayjs(easter);
+    const easterMon = easterDay.add(1, "day");
 
     const holidays = new Set();
     for (const [m, d] of fixed) {
         holidays.add(`${m}-${d}`);
     }
-    holidays.add(`${easter.getMonth()}-${easter.getDate()}`);
-    holidays.add(`${easterMon.getMonth()}-${easterMon.getDate()}`);
+    holidays.add(`${easterDay.month() + 1}-${easterDay.date()}`);
+    holidays.add(`${easterMon.month() + 1}-${easterMon.date()}`);
 
     return holidays;
 }
@@ -60,24 +60,15 @@ function computeEaster(year) {
     const k = c % 4;
     const l = (32 + 2 * e + 2 * i - h - k) % 7;
     const m = Math.floor((a + 11 * h + 22 * l) / 451);
-    const month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
+    const month = Math.floor((h + l - 7 * m + 114) / 31);
     const day = ((h + l - 7 * m + 114) % 31) + 1;
-    return new Date(year, month, day);
-}
-
-// ISO week number for a given date
-function getWeekNumber(date) {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return new Date(year, month - 1, day);
 }
 
 // === State ===
 
 let state = {
-    year: new Date().getFullYear(),
+    year: dayjs().year(),
     profileId: null,
 };
 
@@ -194,13 +185,13 @@ function renderCalendar() {
         monthTd.textContent = MONTHS[m];
         tr.appendChild(monthTd);
 
-        // Week number (based on the 1st of the month)
+        // Week number using Day.js isoWeek plugin
         const weekTd = document.createElement("td");
         weekTd.className = "week-cell";
-        weekTd.textContent = getWeekNumber(new Date(year, m, 1));
+        weekTd.textContent = dayjs(new Date(year, m, 1)).isoWeek();
         tr.appendChild(weekTd);
 
-        const daysInMonth = new Date(year, m + 1, 0).getDate();
+        const daysInMonth = dayjs(new Date(year, m, 1)).daysInMonth();
         const profile = getProfile();
 
         for (let d = 1; d <= 31; d++) {
@@ -213,31 +204,29 @@ function renderCalendar() {
                 continue;
             }
 
-            const date = new Date(year, m, d);
-            const dow = date.getDay();
+            const date = dayjs(new Date(year, m, d));
+            const dow = date.day();
             const isWeekend = dow === 0 || dow === 6;
-            const isHoliday = holidays.has(`${m}-${d}`);
-            const key = `${year}-${m}-${d}`;
+            const isHoliday = holidays.has(`${m + 1}-${d}`);
+            const key = `${year}-${m + 1}-${d}`;
             const value = profile.absences[key] || "";
 
             if (isWeekend) td.classList.add("weekend", "blocked");
             if (isHoliday) td.classList.add("holiday", "blocked");
 
             if (!isWeekend && !isHoliday) {
-                // Show label text
                 if (value) {
                     td.setAttribute("data-value", value);
                     td.textContent = value;
                 }
 
-                // Invisible dropdown overlay
                 const select = document.createElement("select");
                 select.className = "cell-select";
                 select.dataset.key = key;
 
                 const emptyOpt = document.createElement("option");
                 emptyOpt.value = "";
-                emptyOpt.textContent = "—";
+                emptyOpt.textContent = "\u2014";
                 if (!value) emptyOpt.selected = true;
                 select.appendChild(emptyOpt);
 
@@ -303,7 +292,6 @@ function onSelectChange(e) {
         td.setAttribute("data-value", value);
     }
 
-    // Update visible label (text node before the select)
     const textNode = td.firstChild;
     if (textNode && textNode.nodeType === Node.TEXT_NODE) {
         textNode.textContent = value;

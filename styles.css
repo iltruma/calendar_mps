@@ -1,35 +1,11 @@
-* {
-    margin: 0;
+/* === Layout overrides for Pico === */
+
+nav ul {
+    align-items: center;
+}
+
+nav li {
     padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #f5f7fa;
-    color: #333;
-    padding: 16px;
-}
-
-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-
-header h1 {
-    font-size: 1.4rem;
-    color: #2c3e50;
-}
-
-.header-controls {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
 }
 
 .year-selector {
@@ -39,91 +15,45 @@ header h1 {
 }
 
 .year-selector button {
-    background: #3498db;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
     padding: 4px 10px;
-    cursor: pointer;
-    font-size: 1rem;
-}
-
-.year-selector button:hover {
-    background: #2980b9;
+    margin: 0;
 }
 
 #current-year {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 600;
     min-width: 50px;
     text-align: center;
 }
 
-.profile-selector {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.profile-selector select {
+#profile-select {
+    margin: 0;
     padding: 5px 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 0.9rem;
+    min-width: 180px;
 }
 
-.profile-selector button {
-    padding: 5px 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: #fff;
-    cursor: pointer;
+nav button {
+    margin: 0;
+    padding: 5px 12px;
     font-size: 0.85rem;
 }
 
-.profile-selector button:hover {
-    background: #eee;
-}
+/* === Counters === */
 
-.data-actions {
-    display: flex;
-    gap: 6px;
-}
-
-.data-actions button {
-    padding: 5px 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: #fff;
-    cursor: pointer;
-    font-size: 0.85rem;
-}
-
-.data-actions button:hover {
-    background: #eee;
-}
-
-/* Counters */
 .counters {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
+    margin-bottom: 1rem;
 }
 
 .counter {
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 10px 16px;
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.95rem;
+    padding: 0.6rem 1rem;
+    margin-bottom: 0;
 }
 
 .counter.over-budget {
-    border-color: #e74c3c;
+    border-color: var(--pico-color-red-500, #e74c3c);
     background: #fdf0ef;
 }
 
@@ -140,7 +70,7 @@ header h1 {
 }
 
 .counter.over-budget .used {
-    color: #e74c3c;
+    color: var(--pico-color-red-500, #e74c3c);
 }
 
 .edit-budget-btn {
@@ -150,18 +80,18 @@ header h1 {
     font-size: 1rem;
     color: #999;
     padding: 2px;
+    margin: 0;
+    width: auto;
 }
 
 .edit-budget-btn:hover {
     color: #333;
 }
 
-/* Calendar */
+/* === Calendar table === */
+
 .calendar-container {
     overflow-x: auto;
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 6px;
 }
 
 #calendar-table {
@@ -173,13 +103,12 @@ header h1 {
 
 #calendar-table th,
 #calendar-table td {
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--pico-muted-border-color, #e0e0e0);
     text-align: center;
     padding: 0;
 }
 
 #calendar-table th {
-    background: #f0f4f8;
     padding: 4px 2px;
     font-weight: 600;
     position: sticky;
@@ -193,7 +122,7 @@ header h1 {
     max-width: 36px;
     position: sticky;
     left: 0;
-    background: #f0f4f8;
+    background: var(--pico-background-color);
     z-index: 2;
 }
 
@@ -203,7 +132,7 @@ header h1 {
     max-width: 28px;
     position: sticky;
     left: 36px;
-    background: #f0f4f8;
+    background: var(--pico-background-color);
     z-index: 2;
     font-size: 0.65rem;
     color: #888;
@@ -211,7 +140,7 @@ header h1 {
 
 #calendar-body td.month-cell {
     font-weight: 600;
-    background: #f0f4f8;
+    background: var(--pico-background-color);
     position: sticky;
     left: 0;
     z-index: 1;
@@ -223,7 +152,7 @@ header h1 {
 }
 
 #calendar-body td.week-cell {
-    background: #f7f9fb;
+    background: var(--pico-background-color);
     position: sticky;
     left: 36px;
     z-index: 1;
@@ -247,7 +176,7 @@ header h1 {
 }
 
 #calendar-table td.day-cell:hover:not(.blocked) {
-    outline: 2px solid #3498db;
+    outline: 2px solid var(--pico-primary, #3498db);
     outline-offset: -2px;
 }
 
@@ -268,7 +197,7 @@ td.day-cell.holiday {
 }
 
 td.day-cell.empty {
-    background: #fafafa;
+    background: var(--pico-background-color);
     cursor: default;
 }
 
@@ -298,9 +227,14 @@ td.day-cell select.cell-select {
     opacity: 0;
     cursor: pointer;
     font-size: 0.75rem;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
 }
 
-/* Legend */
+/* === Legend === */
+
 .legend {
     display: flex;
     gap: 16px;
@@ -329,14 +263,14 @@ td.day-cell select.cell-select {
 .legend-weekend { background: #fde0c2; }
 .legend-holiday { background: #f5b7b1; }
 
-/* Utility */
+/* === Utility === */
+
 .hidden {
     display: none !important;
 }
 
-.no-profile-msg {
+#no-profile-msg {
     text-align: center;
     padding: 60px 20px;
-    color: #888;
-    font-size: 1.1rem;
+    color: var(--pico-muted-color);
 }
