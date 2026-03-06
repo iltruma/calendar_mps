@@ -72,26 +72,23 @@ function getHolidays(year) {
     return holidays;
 }
 
-// Prefestivi: giorno prima di ogni festivita (se lavorativo)
-// + 31 dicembre (prefestivo di Capodanno)
+// Prefestivi fissi: 14 ago, 8 set, 24 dic, 31 dic
 function getPrefestivi(year, holidays) {
     const prefestivi = new Map();
-
-    // 31 dicembre e sempre prefestivo
-    prefestivi.set(`12-31`, "Pre Capod.");
-
-    for (const [key, label] of holidays) {
-        const [m, d] = key.split("-").map(Number);
-        const prev = dayjs(new Date(year, m - 1, d)).subtract(1, "day");
-        const prevKey = `${prev.month() + 1}-${prev.date()}`;
-        const prevDow = prev.day();
-
-        // Solo se il giorno prima e lavorativo (non weekend, non gia festivo)
-        if (prevDow !== 0 && prevDow !== 6 && !holidays.has(prevKey) && !prefestivi.has(prevKey)) {
-            prefestivi.set(prevKey, `Pre ${label}`);
+    const fixed = [
+        [8, 14,  "Pre Ferragosto"],
+        [9, 8,   "Pre Nativita"],
+        [12, 24, "Vigilia"],
+        [12, 31, "Pre Capod."],
+    ];
+    for (const [m, d, label] of fixed) {
+        const key = `${m}-${d}`;
+        const date = dayjs(new Date(year, m - 1, d));
+        const dow = date.day();
+        if (dow !== 0 && dow !== 6 && !holidays.has(key)) {
+            prefestivi.set(key, label);
         }
     }
-
     return prefestivi;
 }
 
@@ -292,8 +289,8 @@ function renderCalendar() {
                 if (typeCode) {
                     td.setAttribute("data-value", typeCode);
                     if (HOUR_BASED_TYPES.includes(typeCode) && absence.hours != null) {
-                        td.textContent = typeCode;
-                        td.title = formatHours(absence.hours);
+                        td.textContent = formatHours(absence.hours);
+                        td.title = `${ABSENCE_TYPES.find(t => t.code === typeCode).label} – ${formatHours(absence.hours)}`;
                     } else {
                         td.textContent = typeCode;
                     }
@@ -347,21 +344,27 @@ function updateCounters() {
     // Ferie counter
     const fEl = document.getElementById("counter-F");
     const fBudget = profile.budgets.F || DEFAULT_BUDGETS.F;
+    const fRemaining = Math.max(0, fBudget.total - fDays);
     fEl.querySelector(".used").textContent = fDays;
+    fEl.querySelector(".remaining").textContent = fRemaining;
     fEl.querySelector(".total").textContent = fBudget.total;
     fEl.classList.toggle("over-budget", fDays > fBudget.total);
 
     // Ex Festivita counter
     const eEl = document.getElementById("counter-E");
     const eBudget = profile.budgets.E || DEFAULT_BUDGETS.E;
+    const eRemaining = Math.max(0, eBudget.total - eHours);
     eEl.querySelector(".used").textContent = formatHours(eHours);
+    eEl.querySelector(".remaining").textContent = formatHours(eRemaining);
     eEl.querySelector(".total").textContent = formatHours(eBudget.total);
     eEl.classList.toggle("over-budget", eHours > eBudget.total);
 
     // Permesso Retribuito counter
     const pEl = document.getElementById("counter-P");
     const pBudget = profile.budgets.P || DEFAULT_BUDGETS.P;
+    const pRemaining = Math.max(0, pBudget.total - pHours);
     pEl.querySelector(".used").textContent = formatHours(pHours);
+    pEl.querySelector(".remaining").textContent = formatHours(pRemaining);
     pEl.querySelector(".total").textContent = formatHours(pBudget.total);
     pEl.classList.toggle("over-budget", pHours > pBudget.total);
 }
@@ -407,8 +410,8 @@ function onSelectChange(e) {
         }
         profile.absences[key] = { type: value, hours: hours };
         td.setAttribute("data-value", value);
-        td.title = formatHours(hours);
-        updateCellText(td, select, value);
+        td.title = `${ABSENCE_TYPES.find(t => t.code === value).label} – ${formatHours(hours)}`;
+        updateCellText(td, select, formatHours(hours));
     }
 
     saveProfile(profile);
