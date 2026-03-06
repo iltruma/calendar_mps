@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Piano Assenze</title>
+    <title>Piano Assenza MPS</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <header>
         <div class="header-title">
             <img src="assets/logo_mps.jpg" alt="Logo MPS" class="logo">
-            <h1>Piano Assenze</h1>
+            <h1>Piano Assenza MPS</h1>
         </div>
         <div class="header-controls">
             <div class="year-selector">
@@ -49,6 +49,11 @@
                 <span class="counter-value"><span class="used">0:00</span> / <span class="total">30:00</span> ore</span>
                 <button class="edit-budget-btn" data-type="E" title="Modifica budget">&#9881;</button>
             </div>
+            <div class="counter" id="counter-P">
+                <span class="counter-label">Permesso Retr.</span>
+                <span class="counter-value"><span class="used">0:00</span> / <span class="total">7:30</span> ore</span>
+                <button class="edit-budget-btn" data-type="P" title="Modifica budget">&#9881;</button>
+            </div>
         </section>
 
         <section class="calendar-container">
@@ -64,6 +69,7 @@
         <section class="legend">
             <span class="legend-item"><span class="legend-color legend-F"></span> F = Ferie</span>
             <span class="legend-item"><span class="legend-color legend-E"></span> E = Ex Festivita</span>
+            <span class="legend-item"><span class="legend-color legend-P"></span> P = Permesso Retr.</span>
             <span class="legend-item"><span class="legend-color legend-weekend"></span> Weekend</span>
             <span class="legend-item"><span class="legend-color legend-prefestivo"></span> Prefestivo</span>
             <span class="legend-item"><span class="legend-color legend-holiday"></span> Festivita</span>

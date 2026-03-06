@@ -8,11 +8,15 @@ const MONTHS = [
 const ABSENCE_TYPES = [
     { code: "F",  label: "Ferie" },
     { code: "E",  label: "Ex Festivita" },
+    { code: "P",  label: "Permesso Retr." },
 ];
+
+const HOUR_BASED_TYPES = ["E", "P"];
 
 const DEFAULT_BUDGETS = {
     F: { total: 18, unit: "giorni" },
     E: { total: 30, unit: "ore" },
+    P: { total: 7.5, unit: "ore" },
 };
 
 // Returns default hours for E based on day of week
@@ -287,8 +291,8 @@ function renderCalendar() {
 
                 if (typeCode) {
                     td.setAttribute("data-value", typeCode);
-                    if (typeCode === "E" && absence.hours != null) {
-                        td.textContent = "E";
+                    if (HOUR_BASED_TYPES.includes(typeCode) && absence.hours != null) {
+                        td.textContent = typeCode;
                         td.title = formatHours(absence.hours);
                     } else {
                         td.textContent = typeCode;
@@ -331,11 +335,13 @@ function updateCounters() {
 
     let fDays = 0;
     let eHours = 0;
+    let pHours = 0;
 
     for (const [key, absence] of Object.entries(profile.absences)) {
         if (!key.startsWith(state.year + "-")) continue;
         if (absence.type === "F") fDays++;
         if (absence.type === "E" && absence.hours != null) eHours += absence.hours;
+        if (absence.type === "P" && absence.hours != null) pHours += absence.hours;
     }
 
     // Ferie counter
@@ -345,12 +351,19 @@ function updateCounters() {
     fEl.querySelector(".total").textContent = fBudget.total;
     fEl.classList.toggle("over-budget", fDays > fBudget.total);
 
-    // Ex Festivita counter (in ore, formato hh:mm)
+    // Ex Festivita counter
     const eEl = document.getElementById("counter-E");
     const eBudget = profile.budgets.E || DEFAULT_BUDGETS.E;
     eEl.querySelector(".used").textContent = formatHours(eHours);
     eEl.querySelector(".total").textContent = formatHours(eBudget.total);
     eEl.classList.toggle("over-budget", eHours > eBudget.total);
+
+    // Permesso Retribuito counter
+    const pEl = document.getElementById("counter-P");
+    const pBudget = profile.budgets.P || DEFAULT_BUDGETS.P;
+    pEl.querySelector(".used").textContent = formatHours(pHours);
+    pEl.querySelector(".total").textContent = formatHours(pBudget.total);
+    pEl.classList.toggle("over-budget", pHours > pBudget.total);
 }
 
 // === Event Handlers ===
@@ -373,14 +386,14 @@ function onSelectChange(e) {
         td.setAttribute("data-value", "F");
         td.title = "";
         updateCellText(td, select, "F");
-    } else if (value === "E") {
+    } else if (HOUR_BASED_TYPES.includes(value)) {
+        const typeLabel = ABSENCE_TYPES.find(t => t.code === value).label;
         const defaultH = dow === 5 ? 7 : 7.5;
         const input = prompt(
-            `Ore di Ex Festivita (default ${formatHours(defaultH)} per ${dow === 5 ? "venerdi" : "lun-gio"}).\nInserisci ore (es. 3:30 o 3.5) oppure premi OK per giornata intera:`,
+            `Ore di ${typeLabel} (default ${formatHours(defaultH)} per ${dow === 5 ? "venerdi" : "lun-gio"}).\nInserisci ore (es. 3:30 o 3.5) oppure premi OK per giornata intera:`,
             formatHours(defaultH)
         );
         if (input === null) {
-            // User cancelled — revert select
             const prev = profile.absences[key];
             select.value = prev ? prev.type : "";
             return;
@@ -392,10 +405,10 @@ function onSelectChange(e) {
             select.value = prev ? prev.type : "";
             return;
         }
-        profile.absences[key] = { type: "E", hours: hours };
-        td.setAttribute("data-value", "E");
+        profile.absences[key] = { type: value, hours: hours };
+        td.setAttribute("data-value", value);
         td.title = formatHours(hours);
-        updateCellText(td, select, "E");
+        updateCellText(td, select, value);
     }
 
     saveProfile(profile);
