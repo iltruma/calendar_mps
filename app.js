@@ -5,9 +5,11 @@ const MONTHS = [
     "LUG", "AGO", "SET", "OTT", "NOV", "DIC"
 ];
 
-const ABSENCE_TYPES = ["F", "R", "FS"];
-
-const ABSENCE_CYCLE = ["", "F", "R", "FS"]; // click cycles through these
+const ABSENCE_TYPES = [
+    { code: "F",  label: "Ferie" },
+    { code: "R",  label: "ROL" },
+    { code: "FS", label: "Fest.Soppr." },
+];
 
 const DEFAULT_BUDGETS = {
     F:  { total: 20, unit: "giorni" },
@@ -16,7 +18,6 @@ const DEFAULT_BUDGETS = {
 };
 
 // Festivita nazionali fisse (mese 0-indexed, giorno)
-// Include anche festivita specifiche settore bancario (Santo Patrono non incluso — varia per citta)
 function getHolidays(year) {
     const fixed = [
         [0, 1],   // Capodanno
@@ -32,7 +33,6 @@ function getHolidays(year) {
         [11, 31], // San Silvestro (banche chiuse)
     ];
 
-    // Pasqua e Pasquetta (algoritmo anonimo di Gauss)
     const easter = computeEaster(year);
     const easterMon = new Date(easter);
     easterMon.setDate(easterMon.getDate() + 1);
@@ -63,6 +63,15 @@ function computeEaster(year) {
     const month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
     const day = ((h + l - 7 * m + 114) % 31) + 1;
     return new Date(year, month, day);
+}
+
+// ISO week number for a given date
+function getWeekNumber(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
 
 // === State ===
@@ -103,7 +112,7 @@ function createProfile(name) {
     data.profiles[id] = {
         name: name,
         budgets: JSON.parse(JSON.stringify(DEFAULT_BUDGETS)),
-        absences: {}, // key: "year-month-day" -> value: "F"|"R"|"FS"
+        absences: {},
     };
     saveAllData(data);
     return id;
@@ -152,7 +161,6 @@ function populateProfileSelect() {
     const profiles = data.profiles || {};
     const ids = Object.keys(profiles);
 
-    // Preserve selection
     profileSelect.innerHTML = '<option value="">-- Seleziona profilo --</option>';
     for (const id of ids) {
         const opt = document.createElement("option");
@@ -167,8 +175,8 @@ function renderCalendar() {
     const year = state.year;
     const holidays = getHolidays(year);
 
-    // Header: Mese + days 1-31
-    calendarHead.innerHTML = '<th class="month-col">Mese</th>';
+    // Header: Mese | Sett | days 1-31
+    calendarHead.innerHTML = '<th class="month-col"></th><th class="week-col">S</th>';
     for (let d = 1; d <= 31; d++) {
         const th = document.createElement("th");
         th.textContent = d;
@@ -186,7 +194,14 @@ function renderCalendar() {
         monthTd.textContent = MONTHS[m];
         tr.appendChild(monthTd);
 
+        // Week number (based on the 1st of the month)
+        const weekTd = document.createElement("td");
+        weekTd.className = "week-cell";
+        weekTd.textContent = getWeekNumber(new Date(year, m, 1));
+        tr.appendChild(weekTd);
+
         const daysInMonth = new Date(year, m + 1, 0).getDate();
+        const profile = getProfile();
 
         for (let d = 1; d <= 31; d++) {
             const td = document.createElement("td");
@@ -199,24 +214,43 @@ function renderCalendar() {
             }
 
             const date = new Date(year, m, d);
-            const dow = date.getDay(); // 0=Sun, 6=Sat
+            const dow = date.getDay();
             const isWeekend = dow === 0 || dow === 6;
             const isHoliday = holidays.has(`${m}-${d}`);
             const key = `${year}-${m}-${d}`;
-            const profile = getProfile();
             const value = profile.absences[key] || "";
 
             if (isWeekend) td.classList.add("weekend", "blocked");
             if (isHoliday) td.classList.add("holiday", "blocked");
 
-            if (value && !isWeekend && !isHoliday) {
-                td.setAttribute("data-value", value);
-                td.textContent = value;
-            }
-
             if (!isWeekend && !isHoliday) {
-                td.dataset.key = key;
-                td.addEventListener("click", onCellClick);
+                // Show label text
+                if (value) {
+                    td.setAttribute("data-value", value);
+                    td.textContent = value;
+                }
+
+                // Invisible dropdown overlay
+                const select = document.createElement("select");
+                select.className = "cell-select";
+                select.dataset.key = key;
+
+                const emptyOpt = document.createElement("option");
+                emptyOpt.value = "";
+                emptyOpt.textContent = "—";
+                if (!value) emptyOpt.selected = true;
+                select.appendChild(emptyOpt);
+
+                for (const t of ABSENCE_TYPES) {
+                    const opt = document.createElement("option");
+                    opt.value = t.code;
+                    opt.textContent = `${t.code} - ${t.label}`;
+                    if (value === t.code) opt.selected = true;
+                    select.appendChild(opt);
+                }
+
+                select.addEventListener("change", onSelectChange);
+                td.appendChild(select);
             }
 
             tr.appendChild(td);
@@ -232,21 +266,19 @@ function updateCounters() {
 
     const counts = { F: 0, R: 0, FS: 0 };
 
-    // Count only absences for the current year
     for (const [key, val] of Object.entries(profile.absences)) {
         if (key.startsWith(state.year + "-") && counts.hasOwnProperty(val)) {
             counts[val]++;
         }
     }
 
-    for (const type of ABSENCE_TYPES) {
-        const el = document.getElementById(`counter-${type}`);
-        const budget = profile.budgets[type] || DEFAULT_BUDGETS[type];
-        const used = type === "R" ? counts[type] : counts[type]; // ROL: 1 giorno = 1 unita nel conteggio
-        el.querySelector(".used").textContent = used;
+    for (const t of ABSENCE_TYPES) {
+        const el = document.getElementById(`counter-${t.code}`);
+        const budget = profile.budgets[t.code] || DEFAULT_BUDGETS[t.code];
+        el.querySelector(".used").textContent = counts[t.code];
         el.querySelector(".total").textContent = budget.total;
 
-        if (used > budget.total) {
+        if (counts[t.code] > budget.total) {
             el.classList.add("over-budget");
         } else {
             el.classList.remove("over-budget");
@@ -256,22 +288,27 @@ function updateCounters() {
 
 // === Event Handlers ===
 
-function onCellClick(e) {
-    const td = e.currentTarget;
-    const key = td.dataset.key;
+function onSelectChange(e) {
+    const select = e.target;
+    const key = select.dataset.key;
+    const td = select.parentElement;
+    const value = select.value;
     const profile = getProfile();
-    const current = profile.absences[key] || "";
-    const idx = ABSENCE_CYCLE.indexOf(current);
-    const next = ABSENCE_CYCLE[(idx + 1) % ABSENCE_CYCLE.length];
 
-    if (next === "") {
+    if (value === "") {
         delete profile.absences[key];
         td.removeAttribute("data-value");
-        td.textContent = "";
     } else {
-        profile.absences[key] = next;
-        td.setAttribute("data-value", next);
-        td.textContent = next;
+        profile.absences[key] = value;
+        td.setAttribute("data-value", value);
+    }
+
+    // Update visible label (text node before the select)
+    const textNode = td.firstChild;
+    if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+        textNode.textContent = value;
+    } else if (value) {
+        td.insertBefore(document.createTextNode(value), select);
     }
 
     saveProfile(profile);
