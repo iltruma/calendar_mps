@@ -39,34 +39,56 @@ function parseHoursInput(input) {
     return parseFloat(input);
 }
 
-// Festivita nazionali fisse (mese 1-indexed)
+// Festivita nazionali (mese 1-indexed) -> returns Map("m-d" -> label)
 function getHolidays(year) {
     const fixed = [
-        [1, 1],   // Capodanno
-        [1, 6],   // Epifania
-        [4, 25],  // Liberazione
-        [5, 1],   // Festa dei Lavoratori
-        [6, 2],   // Festa della Repubblica
-        [8, 15],  // Ferragosto
-        [11, 1],  // Tutti i Santi
-        [12, 8],  // Immacolata
-        [12, 25], // Natale
-        [12, 26], // Santo Stefano
-        [12, 31], // San Silvestro (banche chiuse)
+        [1, 1,   "Capodanno"],
+        [1, 6,   "Epifania"],
+        [4, 25,  "Liberazione"],
+        [5, 1,   "Lavoratori"],
+        [6, 2,   "Repubblica"],
+        [8, 15,  "Ferragosto"],
+        [11, 1,  "Ognissanti"],
+        [12, 8,  "Immacolata"],
+        [12, 25, "Natale"],
+        [12, 26, "S.Stefano"],
     ];
 
     const easter = computeEaster(year);
     const easterDay = dayjs(easter);
     const easterMon = easterDay.add(1, "day");
 
-    const holidays = new Set();
-    for (const [m, d] of fixed) {
-        holidays.add(`${m}-${d}`);
+    const holidays = new Map();
+    for (const [m, d, label] of fixed) {
+        holidays.set(`${m}-${d}`, label);
     }
-    holidays.add(`${easterDay.month() + 1}-${easterDay.date()}`);
-    holidays.add(`${easterMon.month() + 1}-${easterMon.date()}`);
+    holidays.set(`${easterDay.month() + 1}-${easterDay.date()}`, "Pasqua");
+    holidays.set(`${easterMon.month() + 1}-${easterMon.date()}`, "Pasquetta");
 
     return holidays;
+}
+
+// Prefestivi: giorno prima di ogni festivita (se lavorativo)
+// + 31 dicembre (prefestivo di Capodanno)
+function getPrefestivi(year, holidays) {
+    const prefestivi = new Map();
+
+    // 31 dicembre e sempre prefestivo
+    prefestivi.set(`12-31`, "Pre Capod.");
+
+    for (const [key, label] of holidays) {
+        const [m, d] = key.split("-").map(Number);
+        const prev = dayjs(new Date(year, m - 1, d)).subtract(1, "day");
+        const prevKey = `${prev.month() + 1}-${prev.date()}`;
+        const prevDow = prev.day();
+
+        // Solo se il giorno prima e lavorativo (non weekend, non gia festivo)
+        if (prevDow !== 0 && prevDow !== 6 && !holidays.has(prevKey) && !prefestivi.has(prevKey)) {
+            prefestivi.set(prevKey, `Pre ${label}`);
+        }
+    }
+
+    return prefestivi;
 }
 
 function computeEaster(year) {
@@ -196,6 +218,7 @@ function populateProfileSelect() {
 function renderCalendar() {
     const year = state.year;
     const holidays = getHolidays(year);
+    const prefestivi = getPrefestivi(year, holidays);
 
     // Header
     calendarHead.innerHTML = '<th class="month-col"></th><th class="week-col">S</th>';
@@ -236,14 +259,30 @@ function renderCalendar() {
             const date = dayjs(new Date(year, m, d));
             const dow = date.day();
             const isWeekend = dow === 0 || dow === 6;
-            const isHoliday = holidays.has(`${m + 1}-${d}`);
+            const dayKey = `${m + 1}-${d}`;
+            const holidayLabel = holidays.get(dayKey);
+            const isHoliday = !!holidayLabel;
+            const prefestivoLabel = prefestivi.get(dayKey);
+            const isPrefestivo = !!prefestivoLabel && !isWeekend && !isHoliday;
             const key = `${year}-${m + 1}-${d}`;
             const absence = profile.absences[key] || null;
 
-            if (isWeekend) td.classList.add("weekend", "blocked");
-            if (isHoliday) td.classList.add("holiday", "blocked");
+            // Holiday wins over weekend visually (red even on weekend)
+            if (isHoliday) {
+                td.classList.add("holiday", "blocked");
+                td.textContent = holidayLabel;
+                td.title = holidayLabel;
+            } else if (isWeekend) {
+                td.classList.add("weekend", "blocked");
+            }
 
-            if (!isWeekend && !isHoliday) {
+            if (isPrefestivo) {
+                td.classList.add("prefestivo", "blocked");
+                td.textContent = prefestivoLabel;
+                td.title = prefestivoLabel;
+            }
+
+            if (!isWeekend && !isHoliday && !isPrefestivo) {
                 const typeCode = absence ? absence.type : "";
 
                 if (typeCode) {
