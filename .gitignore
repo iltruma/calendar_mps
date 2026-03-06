@@ -1,0 +1,19 @@
+# Environment / secrets
+.env
+.env*
+*.env
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Dependencies (future)
+node_modules/
+
+# Local data dumps
+*.local.json

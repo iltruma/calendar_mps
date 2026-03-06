@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piano Assenze</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Piano Assenze</h1>
+        <div class="header-controls">
+            <div class="year-selector">
+                <button id="prev-year">&larr;</button>
+                <span id="current-year">2026</span>
+                <button id="next-year">&rarr;</button>
+            </div>
+            <div class="profile-selector">
+                <select id="profile-select">
+                    <option value="">-- Seleziona profilo --</option>
+                </select>
+                <button id="new-profile-btn">Nuovo</button>
+                <button id="delete-profile-btn">Elimina</button>
+            </div>
+        </div>
+    </header>
+
+    <div id="no-profile-msg" class="no-profile-msg">
+        <p>Seleziona o crea un profilo per iniziare.</p>
+    </div>
+
+    <div id="app-content" class="hidden">
+        <section class="counters">
+            <div class="counter" id="counter-F">
+                <span class="counter-label">Ferie</span>
+                <span class="counter-value"><span class="used">0</span> / <span class="total">20</span> giorni</span>
+                <button class="edit-budget-btn" data-type="F" title="Modifica budget">&#9881;</button>
+            </div>
+            <div class="counter" id="counter-R">
+                <span class="counter-label">ROL</span>
+                <span class="counter-value"><span class="used">0</span> / <span class="total">56</span> ore</span>
+                <button class="edit-budget-btn" data-type="R" title="Modifica budget">&#9881;</button>
+            </div>
+            <div class="counter" id="counter-FS">
+                <span class="counter-label">Fest. Soppr.</span>
+                <span class="counter-value"><span class="used">0</span> / <span class="total">4</span> giorni</span>
+                <button class="edit-budget-btn" data-type="FS" title="Modifica budget">&#9881;</button>
+            </div>
+        </section>
+
+        <section class="calendar-container">
+            <table id="calendar-table">
+                <thead>
+                    <tr>
+                        <th class="month-col">Mese</th>
+                    </tr>
+                </thead>
+                <tbody id="calendar-body">
+                </tbody>
+            </table>
+        </section>
+
+        <section class="legend">
+            <span class="legend-item"><span class="legend-color legend-F"></span> F = Ferie</span>
+            <span class="legend-item"><span class="legend-color legend-R"></span> R = ROL</span>
+            <span class="legend-item"><span class="legend-color legend-FS"></span> FS = Fest. Soppr.</span>
+            <span class="legend-item"><span class="legend-color legend-weekend"></span> Weekend</span>
+            <span class="legend-item"><span class="legend-color legend-holiday"></span> Festivita</span>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
