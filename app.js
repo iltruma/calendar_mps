@@ -119,6 +119,14 @@ function saveProfile(profile) {
     saveAllData(data);
 }
 
+function saveLastProfileId(id) {
+    localStorage.setItem("calendar_mps_last_profile", id || "");
+}
+
+function loadLastProfileId() {
+    return localStorage.getItem("calendar_mps_last_profile") || null;
+}
+
 function createProfile(name) {
     const data = loadAllData();
     const id = "p_" + Date.now();
@@ -376,6 +384,7 @@ nextYearBtn.addEventListener("click", () => {
 
 profileSelect.addEventListener("change", (e) => {
     state.profileId = e.target.value || null;
+    saveLastProfileId(state.profileId);
     render();
 });
 
@@ -384,6 +393,7 @@ newProfileBtn.addEventListener("click", () => {
     if (!name || !name.trim()) return;
     const id = createProfile(name.trim());
     state.profileId = id;
+    saveLastProfileId(id);
     render();
 });
 
@@ -393,6 +403,7 @@ deleteProfileBtn.addEventListener("click", () => {
     if (!confirm(`Eliminare il profilo "${profile.name}"?`)) return;
     deleteProfile(state.profileId);
     state.profileId = null;
+    saveLastProfileId(null);
     render();
 });
 
@@ -464,5 +475,14 @@ document.querySelectorAll(".edit-budget-btn").forEach((btn) => {
 });
 
 // === Init ===
+
+// Restore last used profile
+const lastId = loadLastProfileId();
+if (lastId) {
+    const data = loadAllData();
+    if (data.profiles[lastId]) {
+        state.profileId = lastId;
+    }
+}
 
 render();

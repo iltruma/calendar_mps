@@ -20,6 +20,17 @@ header {
     gap: 12px;
 }
 
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo {
+    height: 36px;
+    width: auto;
+}
+
 header h1 {
     font-size: 1.4rem;
     color: #2c3e50;
