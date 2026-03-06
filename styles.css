@@ -266,28 +266,22 @@ td.day-cell.blocked {
     cursor: not-allowed;
 }
 
-/* Weekend: blue/light blue */
+/* Weekend: grey */
 td.day-cell.weekend {
-    background: #bee3f8;
-    color: #2b6cb0;
+    background: #e2e8f0;
+    color: #999;
 }
 
 /* Holiday: red (wins over weekend) */
 td.day-cell.holiday {
     background: #f5b7b1;
     color: #922b21;
-    font-size: 0.5rem;
-    font-weight: 500;
-    line-height: 1.1;
 }
 
 /* Prefestivo: orange */
 td.day-cell.prefestivo {
     background: #fde0c2;
     color: #c0782a;
-    font-size: 0.5rem;
-    font-weight: 500;
-    line-height: 1.1;
 }
 
 td.day-cell.empty {
@@ -343,7 +337,7 @@ td.day-cell select.cell-select {
 
 .legend-F { background: #74b9ff; }
 .legend-E { background: #a29bfe; }
-.legend-weekend { background: #bee3f8; }
+.legend-weekend { background: #e2e8f0; }
 .legend-prefestivo { background: #fde0c2; }
 .legend-holiday { background: #f5b7b1; }
 

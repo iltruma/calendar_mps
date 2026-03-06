@@ -270,7 +270,7 @@ function renderCalendar() {
             // Holiday wins over weekend visually (red even on weekend)
             if (isHoliday) {
                 td.classList.add("holiday", "blocked");
-                td.textContent = holidayLabel;
+                td.textContent = holidayLabel.charAt(0);
                 td.title = holidayLabel;
             } else if (isWeekend) {
                 td.classList.add("weekend", "blocked");
@@ -278,7 +278,7 @@ function renderCalendar() {
 
             if (isPrefestivo) {
                 td.classList.add("prefestivo", "blocked");
-                td.textContent = prefestivoLabel;
+                td.textContent = prefestivoLabel.charAt(0);
                 td.title = prefestivoLabel;
             }
 
