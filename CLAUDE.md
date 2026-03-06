@@ -10,18 +10,21 @@ Web app leggera (HTML/CSS/JS vanilla) offline-first per la gestione ferie, ROL e
 
 ### Funzionalita principali
 - Calendario annuale con griglia mesi (righe) x giorni 1-31 (colonne), come in `requirements/image001.png`
-- Ogni cella permette di selezionare un tipo di assenza: Ferie (F), ROL (R), Festivita Soppresse (FS)
+- Ogni cella permette di selezionare un tipo di assenza:
+  - Ferie (F): giornata intera, default 18 giorni/anno
+  - Ex Festivita (E): a ore o giornata intera, default 30 ore/anno
+    - Giornata intera = 7h30m (lun-gio) o 7h (venerdi)
+    - Parziale: l'utente inserisce le ore manualmente
 - Contatori automatici aggiornati ad ogni modifica:
-  - Ferie: giorni usati / giorni disponibili (default 20g/anno)
-  - ROL: ore usate / ore disponibili (default 56h/anno, 1 ROL = 1h)
-  - Festivita Soppresse: giorni usati / giorni disponibili (default 4g/anno)
+  - Ferie: giorni usati / giorni disponibili
+  - Ex Festivita: ore usate (formato hh:mm) / ore disponibili
 - Validazione: segnalare quando si superano i giorni/ore a disposizione
 - Weekend (sab/dom) evidenziati e bloccati (non selezionabili)
 - Festivita nazionali italiane pre-compilate e bloccate (settore bancario)
 - Le tipologie di assenza sono 3 per ora ma devono poter crescere nel tempo con logiche ad hoc
 
 ### Impostazioni utente
-- Budget configurabile per dipendente (giorni ferie, ore ROL, giorni FS)
+- Budget configurabile per dipendente (giorni ferie, ore ex festivita)
 - Salvataggio/caricamento profili utente in localStorage
 - Anno di riferimento selezionabile
 

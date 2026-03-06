@@ -278,14 +278,9 @@ td.day-cell[data-value="F"] {
     color: #fff;
 }
 
-td.day-cell[data-value="R"] {
+td.day-cell[data-value="E"] {
     background: #a29bfe;
     color: #fff;
-}
-
-td.day-cell[data-value="FS"] {
-    background: #fdcb6e;
-    color: #5a4e1a;
 }
 
 /* Dropdown inside cells */
@@ -324,8 +319,7 @@ td.day-cell select.cell-select {
 }
 
 .legend-F { background: #74b9ff; }
-.legend-R { background: #a29bfe; }
-.legend-FS { background: #fdcb6e; }
+.legend-E { background: #a29bfe; }
 .legend-weekend { background: #fde0c2; }
 .legend-holiday { background: #f5b7b1; }
 

@@ -7,17 +7,39 @@ const MONTHS = [
 
 const ABSENCE_TYPES = [
     { code: "F",  label: "Ferie" },
-    { code: "R",  label: "ROL" },
-    { code: "FS", label: "Fest.Soppr." },
+    { code: "E",  label: "Ex Festivita" },
 ];
 
 const DEFAULT_BUDGETS = {
-    F:  { total: 20, unit: "giorni" },
-    R:  { total: 56, unit: "ore" },
-    FS: { total: 4,  unit: "giorni" },
+    F: { total: 18, unit: "giorni" },
+    E: { total: 30, unit: "ore" },
 };
 
-// Festivita nazionali fisse (mese 1-indexed for dayjs)
+// Returns default hours for E based on day of week
+// Mon-Thu: 7h30m = 7.5h, Fri: 7h
+function getDefaultHoursForDay(date) {
+    const dow = date.day(); // 0=Sun, 5=Fri, 6=Sat
+    return dow === 5 ? 7 : 7.5;
+}
+
+// Format decimal hours to hh:mm string
+function formatHours(decimalHours) {
+    const h = Math.floor(decimalHours);
+    const m = Math.round((decimalHours - h) * 60);
+    return `${h}:${String(m).padStart(2, "0")}`;
+}
+
+// Parse hh:mm or decimal input to decimal hours
+function parseHoursInput(input) {
+    input = input.trim().replace(",", ".");
+    if (input.includes(":")) {
+        const [h, m] = input.split(":");
+        return parseInt(h, 10) + parseInt(m || 0, 10) / 60;
+    }
+    return parseFloat(input);
+}
+
+// Festivita nazionali fisse (mese 1-indexed)
 function getHolidays(year) {
     const fixed = [
         [1, 1],   // Capodanno
@@ -103,6 +125,7 @@ function createProfile(name) {
     data.profiles[id] = {
         name: name,
         budgets: JSON.parse(JSON.stringify(DEFAULT_BUDGETS)),
+        // absences: { "2026-3-15": { type: "F" }, "2026-3-16": { type: "E", hours: 3.5 } }
         absences: {},
     };
     saveAllData(data);
@@ -166,7 +189,7 @@ function renderCalendar() {
     const year = state.year;
     const holidays = getHolidays(year);
 
-    // Header: Mese | Sett | days 1-31
+    // Header
     calendarHead.innerHTML = '<th class="month-col"></th><th class="week-col">S</th>';
     for (let d = 1; d <= 31; d++) {
         const th = document.createElement("th");
@@ -179,13 +202,11 @@ function renderCalendar() {
     for (let m = 0; m < 12; m++) {
         const tr = document.createElement("tr");
 
-        // Month label
         const monthTd = document.createElement("td");
         monthTd.className = "month-cell";
         monthTd.textContent = MONTHS[m];
         tr.appendChild(monthTd);
 
-        // Week number using Day.js isoWeek plugin
         const weekTd = document.createElement("td");
         weekTd.className = "week-cell";
         weekTd.textContent = dayjs(new Date(year, m, 1)).isoWeek();
@@ -209,32 +230,40 @@ function renderCalendar() {
             const isWeekend = dow === 0 || dow === 6;
             const isHoliday = holidays.has(`${m + 1}-${d}`);
             const key = `${year}-${m + 1}-${d}`;
-            const value = profile.absences[key] || "";
+            const absence = profile.absences[key] || null;
 
             if (isWeekend) td.classList.add("weekend", "blocked");
             if (isHoliday) td.classList.add("holiday", "blocked");
 
             if (!isWeekend && !isHoliday) {
-                if (value) {
-                    td.setAttribute("data-value", value);
-                    td.textContent = value;
+                const typeCode = absence ? absence.type : "";
+
+                if (typeCode) {
+                    td.setAttribute("data-value", typeCode);
+                    if (typeCode === "E" && absence.hours != null) {
+                        td.textContent = "E";
+                        td.title = formatHours(absence.hours);
+                    } else {
+                        td.textContent = typeCode;
+                    }
                 }
 
                 const select = document.createElement("select");
                 select.className = "cell-select";
                 select.dataset.key = key;
+                select.dataset.dow = dow;
 
                 const emptyOpt = document.createElement("option");
                 emptyOpt.value = "";
                 emptyOpt.textContent = "\u2014";
-                if (!value) emptyOpt.selected = true;
+                if (!typeCode) emptyOpt.selected = true;
                 select.appendChild(emptyOpt);
 
                 for (const t of ABSENCE_TYPES) {
                     const opt = document.createElement("option");
                     opt.value = t.code;
                     opt.textContent = `${t.code} - ${t.label}`;
-                    if (value === t.code) opt.selected = true;
+                    if (typeCode === t.code) opt.selected = true;
                     select.appendChild(opt);
                 }
 
@@ -253,26 +282,28 @@ function updateCounters() {
     const profile = getProfile();
     if (!profile) return;
 
-    const counts = { F: 0, R: 0, FS: 0 };
+    let fDays = 0;
+    let eHours = 0;
 
-    for (const [key, val] of Object.entries(profile.absences)) {
-        if (key.startsWith(state.year + "-") && counts.hasOwnProperty(val)) {
-            counts[val]++;
-        }
+    for (const [key, absence] of Object.entries(profile.absences)) {
+        if (!key.startsWith(state.year + "-")) continue;
+        if (absence.type === "F") fDays++;
+        if (absence.type === "E" && absence.hours != null) eHours += absence.hours;
     }
 
-    for (const t of ABSENCE_TYPES) {
-        const el = document.getElementById(`counter-${t.code}`);
-        const budget = profile.budgets[t.code] || DEFAULT_BUDGETS[t.code];
-        el.querySelector(".used").textContent = counts[t.code];
-        el.querySelector(".total").textContent = budget.total;
+    // Ferie counter
+    const fEl = document.getElementById("counter-F");
+    const fBudget = profile.budgets.F || DEFAULT_BUDGETS.F;
+    fEl.querySelector(".used").textContent = fDays;
+    fEl.querySelector(".total").textContent = fBudget.total;
+    fEl.classList.toggle("over-budget", fDays > fBudget.total);
 
-        if (counts[t.code] > budget.total) {
-            el.classList.add("over-budget");
-        } else {
-            el.classList.remove("over-budget");
-        }
-    }
+    // Ex Festivita counter (in ore, formato hh:mm)
+    const eEl = document.getElementById("counter-E");
+    const eBudget = profile.budgets.E || DEFAULT_BUDGETS.E;
+    eEl.querySelector(".used").textContent = formatHours(eHours);
+    eEl.querySelector(".total").textContent = formatHours(eBudget.total);
+    eEl.classList.toggle("over-budget", eHours > eBudget.total);
 }
 
 // === Event Handlers ===
@@ -280,6 +311,7 @@ function updateCounters() {
 function onSelectChange(e) {
     const select = e.target;
     const key = select.dataset.key;
+    const dow = parseInt(select.dataset.dow, 10);
     const td = select.parentElement;
     const value = select.value;
     const profile = getProfile();
@@ -287,20 +319,49 @@ function onSelectChange(e) {
     if (value === "") {
         delete profile.absences[key];
         td.removeAttribute("data-value");
-    } else {
-        profile.absences[key] = value;
-        td.setAttribute("data-value", value);
-    }
-
-    const textNode = td.firstChild;
-    if (textNode && textNode.nodeType === Node.TEXT_NODE) {
-        textNode.textContent = value;
-    } else if (value) {
-        td.insertBefore(document.createTextNode(value), select);
+        td.title = "";
+        updateCellText(td, select, "");
+    } else if (value === "F") {
+        profile.absences[key] = { type: "F" };
+        td.setAttribute("data-value", "F");
+        td.title = "";
+        updateCellText(td, select, "F");
+    } else if (value === "E") {
+        const defaultH = dow === 5 ? 7 : 7.5;
+        const input = prompt(
+            `Ore di Ex Festivita (default ${formatHours(defaultH)} per ${dow === 5 ? "venerdi" : "lun-gio"}).\nInserisci ore (es. 3:30 o 3.5) oppure premi OK per giornata intera:`,
+            formatHours(defaultH)
+        );
+        if (input === null) {
+            // User cancelled — revert select
+            const prev = profile.absences[key];
+            select.value = prev ? prev.type : "";
+            return;
+        }
+        const hours = parseHoursInput(input);
+        if (isNaN(hours) || hours <= 0 || hours > defaultH) {
+            alert(`Valore non valido. Inserisci un valore tra 0:01 e ${formatHours(defaultH)}.`);
+            const prev = profile.absences[key];
+            select.value = prev ? prev.type : "";
+            return;
+        }
+        profile.absences[key] = { type: "E", hours: hours };
+        td.setAttribute("data-value", "E");
+        td.title = formatHours(hours);
+        updateCellText(td, select, "E");
     }
 
     saveProfile(profile);
     updateCounters();
+}
+
+function updateCellText(td, select, text) {
+    const textNode = td.firstChild;
+    if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+        textNode.textContent = text;
+    } else if (text) {
+        td.insertBefore(document.createTextNode(text), select);
+    }
 }
 
 prevYearBtn.addEventListener("click", () => {
@@ -382,11 +443,21 @@ document.querySelectorAll(".edit-budget-btn").forEach((btn) => {
         const type = btn.dataset.type;
         const profile = getProfile();
         const budget = profile.budgets[type] || DEFAULT_BUDGETS[type];
-        const input = prompt(`Budget ${type} (${budget.unit}):`, budget.total);
-        if (input === null) return;
-        const val = parseInt(input, 10);
-        if (isNaN(val) || val < 0) return;
-        profile.budgets[type] = { total: val, unit: budget.unit };
+
+        if (budget.unit === "ore") {
+            const input = prompt(`Budget ${type} (ore, es. 30 o 30:00):`, budget.total);
+            if (input === null) return;
+            const val = parseHoursInput(input);
+            if (isNaN(val) || val < 0) return;
+            profile.budgets[type] = { total: val, unit: "ore" };
+        } else {
+            const input = prompt(`Budget ${type} (${budget.unit}):`, budget.total);
+            if (input === null) return;
+            const val = parseInt(input, 10);
+            if (isNaN(val) || val < 0) return;
+            profile.budgets[type] = { total: val, unit: budget.unit };
+        }
+
         saveProfile(profile);
         updateCounters();
     });
