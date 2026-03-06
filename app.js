@@ -347,6 +347,47 @@ deleteProfileBtn.addEventListener("click", () => {
     render();
 });
 
+// === Export / Import ===
+
+document.getElementById("export-btn").addEventListener("click", () => {
+    const data = loadAllData();
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `piano_assenze_${state.year}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+});
+
+document.getElementById("import-btn").addEventListener("click", () => {
+    document.getElementById("import-file").click();
+});
+
+document.getElementById("import-file").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+        try {
+            const data = JSON.parse(evt.target.result);
+            if (!data.profiles || typeof data.profiles !== "object") {
+                alert("File non valido: manca la struttura profili.");
+                return;
+            }
+            if (!confirm("Importare i dati? I dati attuali verranno sovrascritti.")) return;
+            saveAllData(data);
+            state.profileId = null;
+            render();
+        } catch {
+            alert("Errore nella lettura del file JSON.");
+        }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+});
+
 document.querySelectorAll(".edit-budget-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
         if (!state.profileId) return;

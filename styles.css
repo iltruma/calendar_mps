@@ -85,6 +85,24 @@ header h1 {
     background: #eee;
 }
 
+.data-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.data-actions button {
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.data-actions button:hover {
+    background: #eee;
+}
+
 /* Counters */
 .counters {
     display: flex;
